@@ -10,6 +10,7 @@ const buildTargets = [
   "packages/sidecar",
   "packages/platform",
   "tools/dev",
+  "tools/pack",
 ];
 
 const jsExtensions = new Set([".js", ".cjs", ".mjs"]);
