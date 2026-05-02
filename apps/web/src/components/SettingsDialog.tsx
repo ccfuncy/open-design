@@ -166,13 +166,18 @@ export function SettingsDialog({
   const setMode = (mode: ExecMode) => setCfg((c) => ({ ...c, mode }));
   const setApiProtocol = (protocol: 'anthropic' | 'openai') => {
     setCfg((c) => {
-      const currentIsKnown = KNOWN_PROVIDERS.some((p) => p.baseUrl === c.baseUrl);
+      const currentProvider = c.apiProviderBaseUrl
+        ? KNOWN_PROVIDERS.find((p) => p.baseUrl === c.apiProviderBaseUrl)
+        : undefined;
+      const stillOnSelectedProvider = Boolean(currentProvider && c.baseUrl === currentProvider.baseUrl);
       const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
       return {
         ...c,
         mode: 'api',
         apiProtocol: protocol,
-        ...(currentIsKnown && provider ? { baseUrl: provider.baseUrl, model: provider.model } : {}),
+        ...(stillOnSelectedProvider && provider
+          ? { baseUrl: provider.baseUrl, model: provider.model, apiProviderBaseUrl: provider.baseUrl }
+          : { apiProviderBaseUrl: null }),
       };
     });
   };
@@ -546,7 +551,7 @@ export function SettingsDialog({
                   value={selectedProviderIndex >= 0 ? String(selectedProviderIndex) : ''}
                   onChange={(e) => {
                     if (e.target.value === '') {
-                      setCfg((c) => ({ ...c, baseUrl: '', model: '' }));
+                      setCfg((c) => ({ ...c, baseUrl: '', model: '', apiProviderBaseUrl: null }));
                       return;
                     }
                     const idx = Number(e.target.value);
@@ -557,6 +562,7 @@ export function SettingsDialog({
                         apiProtocol: p.protocol,
                         baseUrl: p.baseUrl,
                         model: p.model,
+                        apiProviderBaseUrl: p.baseUrl,
                       }));
                     }
                   }}
@@ -607,6 +613,9 @@ export function SettingsDialog({
                   <option value={CUSTOM_MODEL_SENTINEL}>{t('settings.modelCustom')}</option>
                 </select>
               </label>
+              {!selectedProvider ? (
+                <p className="hint">These are suggested models for this protocol. Your provider may support different models.</p>
+              ) : null}
               {apiModelCustom || apiModelSelectValue === CUSTOM_MODEL_SENTINEL ? (
                 <label className="field">
                   <span className="field-label">{t('settings.modelCustomLabel')}</span>
@@ -623,7 +632,7 @@ export function SettingsDialog({
                 <input
                   type="text"
                   value={cfg.baseUrl}
-                  onChange={(e) => setCfg({ ...cfg, baseUrl: e.target.value })}
+                  onChange={(e) => setCfg({ ...cfg, baseUrl: e.target.value, apiProviderBaseUrl: null })}
                 />
               </label>
               <p className="hint">{t('settings.apiHint')}</p>

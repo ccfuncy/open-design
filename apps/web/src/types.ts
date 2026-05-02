@@ -135,6 +135,10 @@ export interface AppConfig {
   baseUrl: string;
   model: string;
   apiProtocol?: ApiProtocol;
+  /** Internal config schema/migration version for localStorage upgrades. */
+  configMigrationVersion?: number;
+  /** Base URL of the selected known provider; cleared once the user customizes provider fields. */
+  apiProviderBaseUrl?: string | null;
   agentId: string | null;
   skillId: string | null;
   designSystemId: string | null;
