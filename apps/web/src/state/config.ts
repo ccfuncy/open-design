@@ -179,6 +179,12 @@ export function loadConfig(): AppConfig {
       // legacy config can be migrated when it is loaded.
       if (!parsedHasApiProtocol && merged.mode === 'api') {
         merged.apiProtocol = inferApiProtocol(merged.model, merged.baseUrl);
+        // Also set apiProviderBaseUrl so setApiProtocol() can correctly identify
+        // whether the user is on a known provider and switch defaults appropriately.
+        // null means "custom/unknown provider" so the protocol switch won't override
+        // their custom base URL.
+        const knownProvider = KNOWN_PROVIDERS.find((p) => p.baseUrl === merged.baseUrl);
+        merged.apiProviderBaseUrl = knownProvider?.baseUrl ?? null;
       }
       merged.configMigrationVersion = CONFIG_MIGRATION_VERSION;
     }
