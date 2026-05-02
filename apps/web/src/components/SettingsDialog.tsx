@@ -46,6 +46,17 @@ const SUGGESTED_MODELS = [
   'claude-opus-4-5',
   'claude-sonnet-4-5',
   'claude-haiku-4-5',
+  'deepseek-chat',
+  'deepseek-reasoner',
+  'deepseek-v4-flash',
+  'deepseek-v4-pro',
+  'MiniMax-M2.7-highspeed',
+  'MiniMax-M2.7',
+  'MiniMax-M2.5-highspeed',
+  'MiniMax-M2.5',
+  'MiniMax-M2.1-highspeed',
+  'MiniMax-M2.1',
+  'MiniMax-M2',
   'mimo-v2.5-pro',
 ];
 
@@ -133,11 +144,34 @@ export function SettingsDialog({
   );
 
   const setMode = (mode: ExecMode) => setCfg((c) => ({ ...c, mode }));
+  const setApiProtocol = (protocol: 'anthropic' | 'openai') => {
+    const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
+    setCfg((c) => ({
+      ...c,
+      mode: 'api',
+      apiProtocol: protocol,
+      ...(provider ? { baseUrl: provider.baseUrl, model: provider.model } : {}),
+    }));
+  };
 
   const canSave =
     cfg.mode === 'daemon'
       ? Boolean(cfg.agentId && agents.find((a) => a.id === cfg.agentId)?.available)
       : Boolean(cfg.apiKey.trim() && cfg.model.trim() && cfg.baseUrl.trim());
+
+  const apiProtocol = cfg.apiProtocol ?? 'anthropic';
+  const protocolProviders = useMemo(
+    () => KNOWN_PROVIDERS.filter((p) => p.protocol === apiProtocol),
+    [apiProtocol],
+  );
+  const selectedProviderIndex = protocolProviders.findIndex((p) => p.baseUrl === cfg.baseUrl);
+  const selectedProvider = selectedProviderIndex >= 0 ? protocolProviders[selectedProviderIndex] : undefined;
+  const apiModelOptions = useMemo(
+    () => Array.from(new Set(selectedProvider?.models?.length ? selectedProvider.models : SUGGESTED_MODELS)),
+    [selectedProvider],
+  );
+  const apiModelCustom = !cfg.model || !apiModelOptions.includes(cfg.model);
+  const apiModelSelectValue = apiModelCustom ? CUSTOM_MODEL_SENTINEL : cfg.model;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -259,6 +293,7 @@ export function SettingsDialog({
                 className="seg-control"
                 role="tablist"
                 aria-label={t('settings.modeAria')}
+                style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}
               >
                 <button
                   type="button"
@@ -283,12 +318,22 @@ export function SettingsDialog({
                 <button
                   type="button"
                   role="tab"
-                  aria-selected={cfg.mode === 'api'}
-                  className={'seg-btn' + (cfg.mode === 'api' ? ' active' : '')}
-                  onClick={() => setMode('api')}
+                  aria-selected={cfg.mode === 'api' && apiProtocol === 'anthropic'}
+                  className={'seg-btn' + (cfg.mode === 'api' && apiProtocol === 'anthropic' ? ' active' : '')}
+                  onClick={() => setApiProtocol('anthropic')}
                 >
-                  <span className="seg-title">{t('settings.modeApi')}</span>
-                  <span className="seg-meta">{t('settings.modeApiMeta')}</span>
+                  <span className="seg-title">Anthropic API</span>
+                  <span className="seg-meta">/v1/messages</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={cfg.mode === 'api' && apiProtocol === 'openai'}
+                  className={'seg-btn' + (cfg.mode === 'api' && apiProtocol === 'openai' ? ' active' : '')}
+                  onClick={() => setApiProtocol('openai')}
+                >
+                  <span className="seg-title">OpenAI API</span>
+                  <span className="seg-meta">/v1/chat/completions</span>
                 </button>
               </div>
           {cfg.mode === 'daemon' ? (
@@ -466,8 +511,35 @@ export function SettingsDialog({
           ) : (
             <section className="settings-section">
               <div className="section-head">
-                <h3>{t('settings.apiSection')}</h3>
+                <h3>{apiProtocol === 'anthropic' ? 'Anthropic API' : 'OpenAI API'}</h3>
               </div>
+              <label className="field">
+                <span className="field-label">Quick fill provider</span>
+                <select
+                  value={selectedProviderIndex >= 0 ? String(selectedProviderIndex) : ''}
+                  onChange={(e) => {
+                    if (e.target.value === '') {
+                      setCfg((c) => ({ ...c, baseUrl: '', model: '' }));
+                      return;
+                    }
+                    const idx = Number(e.target.value);
+                    if (!isNaN(idx) && protocolProviders[idx]) {
+                      const p = protocolProviders[idx]!;
+                      setCfg((c) => ({
+                        ...c,
+                        apiProtocol: p.protocol,
+                        baseUrl: p.baseUrl,
+                        model: p.model,
+                      }));
+                    }
+                  }}
+                >
+                  <option value="">Custom provider</option>
+                  {protocolProviders.map((p, i) => (
+                    <option key={p.label} value={i}>{p.label}</option>
+                  ))}
+                </select>
+              </label>
               <label className="field">
                 <span className="field-label">{t('settings.apiKey')}</span>
                 <div className="field-row">
@@ -492,18 +564,33 @@ export function SettingsDialog({
               </label>
               <label className="field">
                 <span className="field-label">{t('settings.model')}</span>
-                <input
-                  type="text"
-                  value={cfg.model}
-                  list="suggested-models"
-                  onChange={(e) => setCfg({ ...cfg, model: e.target.value })}
-                />
-                <datalist id="suggested-models">
-                  {SUGGESTED_MODELS.map((m) => (
-                    <option value={m} key={m} />
+                <select
+                  value={apiModelSelectValue}
+                  onChange={(e) => {
+                    if (e.target.value === CUSTOM_MODEL_SENTINEL) {
+                      setCfg((c) => ({ ...c, model: '' }));
+                    } else {
+                      setCfg((c) => ({ ...c, model: e.target.value }));
+                    }
+                  }}
+                >
+                  {apiModelOptions.map((m) => (
+                    <option value={m} key={m}>{m}</option>
                   ))}
-                </datalist>
+                  <option value={CUSTOM_MODEL_SENTINEL}>{t('settings.modelCustom')}</option>
+                </select>
               </label>
+              {apiModelCustom || apiModelSelectValue === CUSTOM_MODEL_SENTINEL ? (
+                <label className="field">
+                  <span className="field-label">{t('settings.modelCustomLabel')}</span>
+                  <input
+                    type="text"
+                    value={cfg.model}
+                    placeholder={t('settings.modelCustomPlaceholder')}
+                    onChange={(e) => setCfg({ ...cfg, model: e.target.value.trim() })}
+                  />
+                </label>
+              ) : null}
               <label className="field">
                 <span className="field-label">{t('settings.baseUrl')}</span>
                 <input
@@ -511,45 +598,6 @@ export function SettingsDialog({
                   value={cfg.baseUrl}
                   onChange={(e) => setCfg({ ...cfg, baseUrl: e.target.value })}
                 />
-              </label>
-              <label className="field">
-                <span className="field-label">Quick fill provider</span>
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const idx = Number(e.target.value);
-                    if (!isNaN(idx) && KNOWN_PROVIDERS[idx]) {
-                      const p = KNOWN_PROVIDERS[idx]!;
-                      setCfg((c) => ({ ...c, baseUrl: p.baseUrl, model: p.model }));
-                    }
-                  }}
-                >
-                  <option value="">— choose a provider —</option>
-                  {KNOWN_PROVIDERS.map((p, i) => (
-                    <option key={i} value={i}>{p.label}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="field">
-                <span className="field-label">{t('settings.maxTokens')}</span>
-                <input
-                  type="number"
-                  min={MIN_MAX_TOKENS}
-                  max={MAX_MAX_TOKENS}
-                  step={MIN_MAX_TOKENS}
-                  placeholder={String(modelMaxTokensDefault(cfg.model))}
-                  value={cfg.maxTokens ?? ''}
-                  onChange={(e) => {
-                    const raw = e.target.value.trim();
-                    if (raw === '') {
-                      setCfg({ ...cfg, maxTokens: undefined });
-                      return;
-                    }
-                    const val = parseInt(raw, 10);
-                    setCfg({ ...cfg, maxTokens: Number.isFinite(val) ? val : undefined });
-                  }}
-                />
-                <p className="hint">{t('settings.maxTokensHint')}</p>
               </label>
               <p className="hint">{t('settings.apiHint')}</p>
             </section>

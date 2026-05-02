@@ -1,4 +1,4 @@
-import type { AppConfig, MediaProviderCredentials, PetConfig } from '../types';
+import type { ApiProtocol, AppConfig, MediaProviderCredentials, PetConfig } from '../types';
 
 const STORAGE_KEY = 'open-design:config';
 
@@ -22,6 +22,9 @@ export const DEFAULT_CONFIG: AppConfig = {
   apiKey: '',
   baseUrl: 'https://api.anthropic.com',
   model: 'claude-sonnet-4-5',
+  // Keep apiProtocol unset in defaults so loadConfig() does not backfill it
+  // into legacy saved configs. streamMessage() uses the legacy provider
+  // heuristic whenever apiProtocol is absent.
   agentId: null,
   skillId: null,
   designSystemId: null,
@@ -33,10 +36,89 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 /** Well-known providers with pre-filled base URLs. */
-export const KNOWN_PROVIDERS: Array<{ label: string; baseUrl: string; model: string }> = [
-  { label: 'Anthropic (Claude)', baseUrl: 'https://api.anthropic.com', model: 'claude-sonnet-4-5' },
-  { label: 'MiMo (Xiaomi) — OpenAI', baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1', model: 'mimo-v2.5-pro' },
-  { label: 'MiMo (Xiaomi) — Anthropic', baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic', model: 'mimo-v2.5-pro' },
+export interface KnownProvider {
+  label: string;
+  protocol: ApiProtocol;
+  baseUrl: string;
+  /** Default model to apply when the provider is selected. */
+  model: string;
+  /** Optional provider-specific model choices shown in Settings. */
+  models?: string[];
+}
+
+export const KNOWN_PROVIDERS: KnownProvider[] = [
+  {
+    label: 'Anthropic (Claude)',
+    protocol: 'anthropic',
+    baseUrl: 'https://api.anthropic.com',
+    model: 'claude-sonnet-4-5',
+    models: ['claude-sonnet-4-5', 'claude-opus-4-5', 'claude-haiku-4-5'],
+  },
+  {
+    label: 'DeepSeek — Anthropic',
+    protocol: 'anthropic',
+    baseUrl: 'https://api.deepseek.com/anthropic',
+    model: 'deepseek-chat',
+    models: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-v4-flash', 'deepseek-v4-pro'],
+  },
+  {
+    label: 'MiniMax — Anthropic',
+    protocol: 'anthropic',
+    baseUrl: 'https://api.minimaxi.com/anthropic',
+    model: 'MiniMax-M2.7-highspeed',
+    models: [
+      'MiniMax-M2.7-highspeed',
+      'MiniMax-M2.7',
+      'MiniMax-M2.5-highspeed',
+      'MiniMax-M2.5',
+      'MiniMax-M2.1-highspeed',
+      'MiniMax-M2.1',
+      'MiniMax-M2',
+    ],
+  },
+  {
+    label: 'OpenAI',
+    protocol: 'openai',
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-4o',
+    models: ['gpt-4o', 'gpt-4o-mini', 'o3', 'o4-mini'],
+  },
+  {
+    label: 'DeepSeek — OpenAI',
+    protocol: 'openai',
+    baseUrl: 'https://api.deepseek.com',
+    model: 'deepseek-chat',
+    models: ['deepseek-chat', 'deepseek-reasoner', 'deepseek-v4-flash', 'deepseek-v4-pro'],
+  },
+  {
+    label: 'MiniMax — OpenAI',
+    protocol: 'openai',
+    baseUrl: 'https://api.minimaxi.com/v1',
+    model: 'MiniMax-M2.7-highspeed',
+    models: [
+      'MiniMax-M2.7-highspeed',
+      'MiniMax-M2.7',
+      'MiniMax-M2.5-highspeed',
+      'MiniMax-M2.5',
+      'MiniMax-M2.1-highspeed',
+      'MiniMax-M2.1',
+      'MiniMax-M2',
+    ],
+  },
+  {
+    label: 'MiMo (Xiaomi) — OpenAI',
+    protocol: 'openai',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/v1',
+    model: 'mimo-v2.5-pro',
+    models: ['mimo-v2.5-pro'],
+  },
+  {
+    label: 'MiMo (Xiaomi) — Anthropic',
+    protocol: 'anthropic',
+    baseUrl: 'https://token-plan-cn.xiaomimimo.com/anthropic',
+    model: 'mimo-v2.5-pro',
+    models: ['mimo-v2.5-pro'],
+  },
 ];
 
 function normalizePet(input: Partial<PetConfig> | undefined): PetConfig {
