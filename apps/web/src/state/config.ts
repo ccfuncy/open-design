@@ -1,3 +1,4 @@
+import { isOpenAICompatible } from '../providers/openai-compatible';
 import type { ApiProtocol, AppConfig, MediaProviderCredentials, PetConfig } from '../types';
 
 const STORAGE_KEY = 'open-design:config';
@@ -137,13 +138,22 @@ export function loadConfig(): AppConfig {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_CONFIG, pet: normalizePet(DEFAULT_PET) };
     const parsed = JSON.parse(raw) as Partial<AppConfig>;
-    return {
+    const merged: AppConfig = {
       ...DEFAULT_CONFIG,
       ...parsed,
       mediaProviders: { ...(parsed.mediaProviders ?? {}) },
       agentModels: { ...(parsed.agentModels ?? {}) },
       pet: normalizePet(parsed.pet),
     };
+
+    // One-time migration for configs saved before apiProtocol existed: make
+    // the inferred protocol explicit so old OpenAI-compatible endpoints keep
+    // routing correctly after the Settings UI splits protocol tabs.
+    if (!merged.apiProtocol && merged.mode === 'api') {
+      merged.apiProtocol = isOpenAICompatible(merged.model, merged.baseUrl) ? 'openai' : 'anthropic';
+    }
+
+    return merged;
   } catch {
     return { ...DEFAULT_CONFIG, pet: normalizePet(DEFAULT_PET) };
   }

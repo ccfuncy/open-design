@@ -42,23 +42,43 @@ interface Props {
   onRefreshAgents: () => void;
 }
 
-const SUGGESTED_MODELS = [
-  'claude-opus-4-5',
-  'claude-sonnet-4-5',
-  'claude-haiku-4-5',
-  'deepseek-chat',
-  'deepseek-reasoner',
-  'deepseek-v4-flash',
-  'deepseek-v4-pro',
-  'MiniMax-M2.7-highspeed',
-  'MiniMax-M2.7',
-  'MiniMax-M2.5-highspeed',
-  'MiniMax-M2.5',
-  'MiniMax-M2.1-highspeed',
-  'MiniMax-M2.1',
-  'MiniMax-M2',
-  'mimo-v2.5-pro',
-];
+const SUGGESTED_MODELS_BY_PROTOCOL = {
+  anthropic: [
+    'claude-opus-4-5',
+    'claude-sonnet-4-5',
+    'claude-haiku-4-5',
+    'deepseek-chat',
+    'deepseek-reasoner',
+    'deepseek-v4-flash',
+    'deepseek-v4-pro',
+    'MiniMax-M2.7-highspeed',
+    'MiniMax-M2.7',
+    'MiniMax-M2.5-highspeed',
+    'MiniMax-M2.5',
+    'MiniMax-M2.1-highspeed',
+    'MiniMax-M2.1',
+    'MiniMax-M2',
+    'mimo-v2.5-pro',
+  ],
+  openai: [
+    'gpt-4o',
+    'gpt-4o-mini',
+    'o3',
+    'o4-mini',
+    'deepseek-chat',
+    'deepseek-reasoner',
+    'deepseek-v4-flash',
+    'deepseek-v4-pro',
+    'MiniMax-M2.7-highspeed',
+    'MiniMax-M2.7',
+    'MiniMax-M2.5-highspeed',
+    'MiniMax-M2.5',
+    'MiniMax-M2.1-highspeed',
+    'MiniMax-M2.1',
+    'MiniMax-M2',
+    'mimo-v2.5-pro',
+  ],
+} as const;
 
 export function SettingsDialog({
   initial,
@@ -145,13 +165,16 @@ export function SettingsDialog({
 
   const setMode = (mode: ExecMode) => setCfg((c) => ({ ...c, mode }));
   const setApiProtocol = (protocol: 'anthropic' | 'openai') => {
-    const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
-    setCfg((c) => ({
-      ...c,
-      mode: 'api',
-      apiProtocol: protocol,
-      ...(provider ? { baseUrl: provider.baseUrl, model: provider.model } : {}),
-    }));
+    setCfg((c) => {
+      const currentIsKnown = KNOWN_PROVIDERS.some((p) => p.baseUrl === c.baseUrl);
+      const provider = KNOWN_PROVIDERS.find((p) => p.protocol === protocol);
+      return {
+        ...c,
+        mode: 'api',
+        apiProtocol: protocol,
+        ...(currentIsKnown && provider ? { baseUrl: provider.baseUrl, model: provider.model } : {}),
+      };
+    });
   };
 
   const canSave =
@@ -167,11 +190,15 @@ export function SettingsDialog({
   const selectedProviderIndex = protocolProviders.findIndex((p) => p.baseUrl === cfg.baseUrl);
   const selectedProvider = selectedProviderIndex >= 0 ? protocolProviders[selectedProviderIndex] : undefined;
   const apiModelOptions = useMemo(
-    () => Array.from(new Set(selectedProvider?.models?.length ? selectedProvider.models : SUGGESTED_MODELS)),
-    [selectedProvider],
+    () => Array.from(new Set(
+      selectedProvider?.models?.length
+        ? selectedProvider.models
+        : SUGGESTED_MODELS_BY_PROTOCOL[apiProtocol],
+    )),
+    [apiProtocol, cfg.baseUrl, selectedProvider],
   );
-  const apiModelCustom = !cfg.model || !apiModelOptions.includes(cfg.model);
-  const apiModelSelectValue = apiModelCustom ? CUSTOM_MODEL_SENTINEL : cfg.model;
+  const apiModelCustom = Boolean(cfg.model) && !apiModelOptions.includes(cfg.model);
+  const apiModelSelectValue = apiModelCustom || !cfg.model ? CUSTOM_MODEL_SENTINEL : cfg.model;
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
