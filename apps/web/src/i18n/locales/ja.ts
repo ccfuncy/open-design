@@ -73,6 +73,9 @@ export const ja: Dict = {
   'settings.hide': '隠す',
   'settings.model': 'モデル',
   'settings.baseUrl': 'ベース URL',
+  'settings.maxTokens': '最大トークン（任意）',
+  'settings.maxTokensHint':
+    '応答長の上限。各モデルにチューニング済みのデフォルト値があります（プレースホルダーに表示）。空のままにすればそれを使用し、数値を入力すれば上書きされます。',
   'settings.apiHint':
     'リクエストはこのブラウザから設定したベース URL に直接送信されます。プロキシなし。キーは localStorage から外に出ません。',
   'settings.skipForNow': '今はスキップ',

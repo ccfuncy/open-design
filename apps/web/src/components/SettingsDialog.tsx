@@ -10,6 +10,11 @@ import {
   renderModelOptions,
 } from './modelOptions';
 import { KNOWN_PROVIDERS } from '../state/config';
+import {
+  MAX_MAX_TOKENS,
+  MIN_MAX_TOKENS,
+  modelMaxTokensDefault,
+} from '../state/maxTokens';
 import type { AgentInfo, AppConfig, AppVersionInfo, ExecMode } from '../types';
 import { MEDIA_PROVIDERS } from '../media/models';
 import type { MediaProvider } from '../media/models';
@@ -444,6 +449,27 @@ export function SettingsDialog({
                     <option key={i} value={i}>{p.label}</option>
                   ))}
                 </select>
+              </label>
+              <label className="field">
+                <span className="field-label">{t('settings.maxTokens')}</span>
+                <input
+                  type="number"
+                  min={MIN_MAX_TOKENS}
+                  max={MAX_MAX_TOKENS}
+                  step={MIN_MAX_TOKENS}
+                  placeholder={String(modelMaxTokensDefault(cfg.model))}
+                  value={cfg.maxTokens ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    if (raw === '') {
+                      setCfg({ ...cfg, maxTokens: undefined });
+                      return;
+                    }
+                    const val = parseInt(raw, 10);
+                    setCfg({ ...cfg, maxTokens: Number.isFinite(val) ? val : undefined });
+                  }}
+                />
+                <p className="hint">{t('settings.maxTokensHint')}</p>
               </label>
               <p className="hint">{t('settings.apiHint')}</p>
             </section>
