@@ -136,6 +136,7 @@ export const tr: Dict = {
   'promptTemplates.openSource': 'Orijinali görüntüle',
   'promptTemplates.openFullscreen': 'Tam ekran ön izlemeyi aç',
   'promptTemplates.closeFullscreen': 'Tam ekran ön izlemeyi kapat',
+  'promptTemplates.retry': 'Tekrar dene',
 
   'newproj.tabPrototype': 'Prototip',
   'newproj.tabDeck': 'Slayt gösterisi',
@@ -206,6 +207,17 @@ export const tr: Dict = {
   'newproj.audioDurationSeconds': '{n}s',
   'newproj.voiceLabel': 'Ses',
   'newproj.voicePlaceholder': 'Sağlayıcı ses kimliği, opsiyonel',
+  'newproj.promptTemplateLabel': 'Referans şablon',
+  'newproj.promptTemplateNoneTitle': 'Hiçbiri — kendiniz yazın',
+  'newproj.promptTemplateNoneSub': 'Galeriyi atla, kendi briefinizi açıklayın',
+  'newproj.promptTemplateRefSub': 'Referans şablon',
+  'newproj.promptTemplateSearch': 'Şablon ara…',
+  'newproj.promptTemplateEmpty': 'Bu yüzey için henüz şablon yok.',
+  'newproj.promptTemplateBodyLabel': 'İstem (düzenleyebilirsiniz)',
+  'newproj.promptTemplateOptimizeHint':
+    'Her şeyi düzenleyebilirsiniz — değişiklikleriniz ajanın briefine taşınır.',
+  'newproj.promptTemplateBodyEmpty':
+    'Boş gövde — ajan şablon referansı almayacak.',
 
   'designs.subRecent': 'Yakında',
   'designs.subYours': 'Tasarımların',
@@ -383,7 +395,7 @@ export const tr: Dict = {
   'workspace.deleteFileConfirm': '"{name}"ı proje klasöründen sil?',
   'workspace.openFromDesignFiles': 'bir dosya aç',
   'workspace.designFilesLink': 'Tasarım Dosyaları',
-  'workspace.loadingSketch': 'Taslak yükleniyor…',',
+  'workspace.loadingSketch': 'Taslak yükleniyor…',
   'designFiles.title': 'Tasarım Dosyaları',
   'designFiles.upload': 'Dosyaları yükle',
   'designFiles.pasteText': 'Metin dosyası olarak yapıştır',
